@@ -15,6 +15,7 @@
     "url": "https://github.com/eskerda/slack-keep-presence.git"
   },
   "dependencies": {
+    "@slack/client": "^3.15.0",
     "argparse": "^1.0.6",
     "es6-template-strings": "^2.0.0",
     "jethro": "^2.7.1",
