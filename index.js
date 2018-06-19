@@ -7,10 +7,11 @@ class SlackPresence {
   constructor(token) {
     this.token = token;
     this.slack = new Slack(token);
-    this.slackrtm = new RtmClient(token, {
+    this.rtmOpts = {
       dataStore: false,
       useRtmConnect: true
-    });
+    };
+    this.slackrtm = new RtmClient(token, this.rtmOpts);
   }
 
   static log(msg, level, flag) {
@@ -23,6 +24,7 @@ class SlackPresence {
     SlackPresence.log('Getting my user id');
     return this.slack.api(
       'auth.test',
+      { set_active: true },
       function(err, response) {
         SlackPresence.log('Found ' + response.user_id);
         this.user_id = response.user_id;
@@ -51,24 +53,39 @@ class SlackPresence {
   }
 
   check_presence(err, data) {
-    if (!data['auto_away']) return;
+    console.log(data);
+    SlackPresence.log('Auto Away: ' + data.auto_away);
+    SlackPresence.log('Manual Away: ' + data.manual_away);
+    if (data.manual_away) return;
     this.set_active();
+  }
+
+  reconnect() {
+    this.slackrtm.removeAllListeners();
+    this.slackrtm.disconnect();
+    this.slackrtm = null;
+
+    this.slackrtm = new RtmClient(this.token, this.rtmOpts);
+
+    this.start_presence(this.user_id);
   }
 
   set_active() {
     SlackPresence.log('Setting myself active');
-    this.slack.api('users.setActive', function(err, response) {
-      if (err) {
-        SlackPresence(`Error setting presence: ${err}`);
-      } else if (response.error) {
-        SlackPresence(`Error setting presence: ${response.error}`);
-      } else if (!response.ok) {
-        SlackPresence.log('Set active not OK.');
-      } else {
-        SlackPresence.log('Set active success!');
-        this.get_me();
-      }
-    });
+    this.reconnect();
+    // Set Active isn't working nor is calling with `set_active` in auth.test so, just reconnect.
+    // this.slack.api('users.setActive', (err, response) => {
+    //   if (err) {
+    //     SlackPresence(`Error setting presence: ${err}`);
+    //   } else if (response.error) {
+    //     SlackPresence(`Error setting presence: ${response.error}`);
+    //   } else if (!response.ok) {
+    //     SlackPresence.log('Set active not OK.');
+    //   } else {
+    //     SlackPresence.log('Set active success!');
+    //     this.get_me(uid => SlackPresence.log(`Got user ID: ${uid}`));
+    //   }
+    // });
   }
 }
 
