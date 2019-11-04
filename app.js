@@ -55,7 +55,13 @@ _.each(args, function(value, key, list) {
 
 var config_path;
 if (args['config']) {
-    config_path = path.join(process.cwd(), args['config'])
+    if (args['config'].startsWith("/")) {
+        // set config_path to the config arg directly when it is a full path, beginning with a /
+        config_path = args['config'];
+    } else {
+        // otherwise set config_path to combined current working directory and the config arg
+        config_path = path.join(process.cwd(), args['config'])
+    }
 } else {
     config_path = path.join(process.env.HOME, '.config/slack-keep-presence')
 }
@@ -64,7 +70,7 @@ fs.readFile(config_path, 'utf8', function(err, data) {
     var config;
     if (err) {
         if (args['config']) {
-            console.error('No such file:', args['config']);
+            console.error('No such file:', config_path);
             process.exit(1);
         }
         // Otherwise, failure to read $HOME/.config/slack-keep-presence is not
